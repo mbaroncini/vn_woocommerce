@@ -12,6 +12,8 @@
 if ( ! defined( 'ABSPATH' ) )
     exit;
 
+require_once('vn_calendars.php');
+
 define('VNWC_FILE', __FILE__ );
 
 /**
