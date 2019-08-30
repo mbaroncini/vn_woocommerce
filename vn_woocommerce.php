@@ -166,11 +166,77 @@ function vnwc_get_orders_before_departure_query_var( $query, $query_vars ) {
 add_filter( 'woocommerce_order_data_store_cpt_get_orders_query', 'vnwc_get_orders_before_departure_query_var', 10, 2 );
 
 
+//isset( WC()->
+//foreach( $cart->cart_contents as $cart_item_key => &$cart_item ){}
+
+//if( isset( $cart_item[ 'deposit' ] ) && $cart_item[ 'deposit' ][ 'enable' ] === 'yes' ){}
 
 
-add_filter('woocommerce_deposits_cart_deposit_amount' , 'vnwc_disablePartialPaymentOnNearTrip' , 99 , 2 );
+
+add_filter('woocommerce_calculated_total','vnwc_disable_deposit', 1000 , 2 );
+function vnwc_disable_deposit( $cart_total , $cart )
+{
+
+    /**
+     * Max days supported for deposit payment
+     */
+    $days_interval = VNWC_REMINDER_AND_DEPOSIT_DAYS;//config var
+
+
+    /**
+     * only for tests
+     * TODO: remove this line
+     */
+    //$wc->cart->add_discount( 15663971975130 );//test
+
+    /**
+     * get departure date from coupon
+     */
+    if ( ! empty( $cart->applied_coupons ) ) {
+        $coupons = $cart->get_coupons();
+        if ( is_array( $coupons ) && ! empty( $coupons ) )
+        {
+            $coupon = reset($coupons);
+            /**
+             * get coupon description (json with departure date info)
+             */
+            if ( $description = $coupon->get_description() )
+            {
+                $info = json_decode($description, true);
+                if ( isset( $info["departureDate"] ) && $info["departureDate"] )
+                {
+                    /**
+                     * calculate days between now and departure data
+                     */
+                    $diff_days = vnwc_getDaysBetween( $info["departureDate"] );
+
+                    //departure date in wrong format, impossible create new DateTime object
+                    if ( $diff_days === FALSE)
+                    {
+                        trigger_error("vn_woocommerce plugin error, impossible get days before departure");
+                    }
+                    elseif( $diff_days <= $days_interval )
+                    {
+                        global $wc_deposits;
+                        $check = remove_filter( 'woocommerce_calculated_total' , array( $wc_deposits->cart , 'calculated_total' ) , 1001 );
+                        //remove child theme hook in cart totals sections
+                        remove_action( 'woocommerce_cart_totals_after_order_total','show_deposit_amount' );
+                    }
+                }
+
+            }
+        }
+
+    }
+
+    return $cart_total;
+}
+
+
+//add_filter('woocommerce_deposits_cart_deposit_amount' , 'vnwc_disablePartialPaymentOnNearTrip' , 99 , 2 );
 function vnwc_disablePartialPaymentOnNearTrip( $deposit_amount , $cart_total )
 {
+
     /**
      * Max days supported for deposit payment
      */

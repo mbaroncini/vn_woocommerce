@@ -173,7 +173,7 @@ if (defined('WP_CLI') && WP_CLI) {
 
 
 
-        file_put_contents('test.json', json_encode($r));
+        file_put_contents('calendar_departures_all.json', json_encode($r));
 
         WP_CLI::line( "\n " . time() - $t_start . " seconds");
         WP_CLI::success( "######################## DONE ########################" );
