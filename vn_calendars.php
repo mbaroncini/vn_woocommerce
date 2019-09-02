@@ -14,24 +14,21 @@ function dw_weekDayToWeekNumber( $days_of_week ){
 
 function dy_OrderByMostRecentDate($a, $b)
 {
-    $day_a = isset( $a['properties']['all_dates'][0] ) ? $a['properties']['all_dates'][0] : FALSE;
-    $day_b = isset( $b['properties']['all_dates'][0] ) ? $b['properties']['all_dates'][0] : FALSE;
 
-    if ( ! $day_a && ! $day_b )
-        return 0;
+    $day_a = isset( $a['properties']['all_dates'][0] ) ? DateTime::createFromFormat('Y-m-d',$a['properties']['all_dates'][0]) : FALSE;
+    $day_b = isset( $b['properties']['all_dates'][0] ) ? DateTime::createFromFormat('Y-m-d',$b['properties']['all_dates'][0] ) : FALSE;
 
-    if ( ! $day_a && $day_b instanceof DateTime )
+    if ( ! $day_a && $day_b )
         return 1;
 
-    if ( ! $day_b && $day_a instanceof DateTime )
+    if ( $day_a && ! $day_b )
         return -1;
 
     if ( $day_a == $day_b ) {
         return 0;
     }
 
-    return ($day_a < $day_b) ? 1 : -1;
-
+    return ($day_a < $day_b) ? -1 : 1;
 }
 
 
@@ -66,7 +63,14 @@ if (defined('WP_CLI') && WP_CLI) {
             'post_type' => 'route',
             'post_status' => 'publish',
             'nopaging' => true,
-            'suppress_filters' => false
+            'suppress_filters' => false,
+            'meta_query' => array(
+                array(
+                    'key' => 'wm_guided',
+                    'value' => 1
+                )
+            )
+
         );
 
         if ( $id )
@@ -121,7 +125,6 @@ if (defined('WP_CLI') && WP_CLI) {
                     }
                 }
 
-
             }
 
             foreach ( $d_periods as $e )
@@ -147,6 +150,8 @@ if (defined('WP_CLI') && WP_CLI) {
                 return true;
             });
 
+            //order single dates
+            asort($dates);
 
             $post = array(
                 'properties' => [
@@ -168,8 +173,9 @@ if (defined('WP_CLI') && WP_CLI) {
             $i++;
         }
 
-        usort($r['features'], "dy_OrderByMostRecentDate");
-
+        $temp = $r['features'];
+        usort($temp, "dy_OrderByMostRecentDate");
+        $r['features'] = $temp;
 
 
 
